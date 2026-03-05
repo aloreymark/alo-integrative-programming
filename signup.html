@@ -8,22 +8,34 @@
   </head>
   <body>
     <div class="auth-container">
-      <h2>Sign Up</h2>
+      <h2>Create Account</h2>
 
-      <form class="auth-form">
-        <input type="text" placeholder="Full Name" required />
-        <input type="email" placeholder="Email" required />
-        <input type="password" placeholder="Password" required />
-        <input type="password" placeholder="Confirm Password" />
-        <button type="submit">Create Account</button>
+      <form class="auth-form" id="signupForm">
+        <div class="form-group">
+          <input type="text" placeholder="Full Name" id="fullName" required />
+          <small class="error"></small>
+        </div>
+        <div class="form-group">
+          <input type="email" placeholder="Email" id="email" required />
+          <small class="error"></small>
+        </div>
+        <div class="form-group">
+          <input
+            type="password"
+            placeholder="Password"
+            id="password"
+            required
+          />
+          <small class="error"></small>
+        </div>
+        <button type="submit">Sign Up</button>
       </form>
 
-      <p>
-        Already have an account?
-        <a href="login.html">Login</a>
-      </p>
+      <p>Already have an account? <a href="login.html">Login</a></p>
 
       <a href="index.html" class="back-link">← Back to Home</a>
     </div>
+
+    <script src="script.js"></script>
   </body>
 </html>

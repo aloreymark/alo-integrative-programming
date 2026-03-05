@@ -10,18 +10,30 @@
     <div class="auth-container">
       <h2>Login</h2>
 
-      <form class="auth-form">
-        <input type="email" placeholder="Email" required />
-        <input type="password" placeholder="Password" required />
+      <form class="auth-form" id="loginForm">
+        <div class="form-group">
+          <input type="email" placeholder="Email" id="loginEmail" required />
+          <small class="error"></small>
+        </div>
+        <div class="form-group">
+          <input
+            type="password"
+            placeholder="Password"
+            id="loginPassword"
+            required
+          />
+          <small class="error"></small>
+        </div>
         <button type="submit">Login</button>
       </form>
 
-      <p>
-        Don’t have an account?
-        <a href="signup.html">Sign up</a>
-      </p>
-
+      <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
       <a href="index.html" class="back-link">← Back to Home</a>
     </div>
+
+    <script>
+      console.log("Login page loaded");
+    </script>
+    <script src="script.js"></script>
   </body>
 </html>

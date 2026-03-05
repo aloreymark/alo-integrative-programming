@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings | NEONOVA</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="nav">
+      <h1>Settings</h1>
+    </header>
+
+    <main class="dashboard">
+      <section class="card">
+        <form id="settingsForm">
+          <label>
+            Change Email
+            <input
+              type="email"
+              id="settingsEmail"
+              placeholder="new@email.com"
+              required
+            />
+            <small class="error"></small>
+          </label>
+
+          <label>
+            Change Password
+            <input
+              type="password"
+              id="settingsPassword"
+              placeholder="New Password"
+              required
+            />
+            <small class="error"></small>
+          </label>
+
+          <label>
+            Theme
+            <select id="settingsTheme">
+              <option>Light</option>
+              <option>Dark</option>
+            </select>
+          </label>
+
+          <button type="submit">Save</button>
+        </form>
+      </section>
+
+      <a href="profile.html" class="btn">Back to Profile</a>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
