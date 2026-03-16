@@ -233,43 +233,12 @@ if (settingsForm) {
   }
 })();
 
-// Example role check
-let userRole = "admin";
-
-if (userRole === "admin") {
-  console.log("Admin access granted");
-}
-
-// Delete user from table
-function deleteUser(button) {
-  let row = button.parentElement.parentElement;
-  row.remove();
-}
-
-// Add new user to table
-function addUser(event) {
-  event.preventDefault();
-
-  let name = document.getElementById("name").value;
-  let email = document.getElementById("email").value;
-
-  let table = document.querySelector("table");
-
-  let newRow = table.insertRow();
-
-  newRow.insertCell(0).innerText = table.rows.length - 1;
-  newRow.insertCell(1).innerText = name;
-  newRow.insertCell(2).innerText = email;
-
-  let actionCell = newRow.insertCell(3);
-  actionCell.innerHTML = '<button onclick="deleteUser(this)">Delete</button>';
-
-  document.querySelector("form").reset();
-}
-
 /**
- * Country Explorer App
- * Fetches and displays country information using REST Countries API
+ * Globetrotter - Country Information Explorer
+ * API Integration Activity
+ *
+ * This application uses the REST Countries API to fetch and display
+ * detailed information about countries around the world.
  */
 
 // API Configuration
@@ -281,58 +250,73 @@ const API_FIELDS =
 const countryInput = document.getElementById("countryInput");
 const searchBtn = document.getElementById("searchBtn");
 const resultsSection = document.getElementById("resultsSection");
-const loadingTemplate = document.getElementById("loadingTemplate");
+const loadingIndicator = document.getElementById("loadingIndicator");
 
-// Example buttons
-const exampleBtns = document.querySelectorAll(".example-btn");
-
-// Event Listeners
-searchBtn.addEventListener("click", handleSearch);
-countryInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") handleSearch();
-});
-
-// Add click listeners to example buttons
-exampleBtns.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const country = btn.getAttribute("data-country");
-    countryInput.value = country;
-    handleSearch();
-  });
+// Initialize the application
+document.addEventListener("DOMContentLoaded", () => {
+  setupEventListeners();
+  // Optional: Load a default country on first visit
+  // loadDefaultCountry();
 });
 
 /**
+ * Set up all event listeners
+ */
+function setupEventListeners() {
+  // Search button click
+  searchBtn.addEventListener("click", handleSearch);
+
+  // Enter key in input field
+  countryInput.addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+      handleSearch();
+    }
+  });
+
+  // Suggestion buttons
+  document.querySelectorAll(".suggestion-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const country = button.getAttribute("data-country");
+      countryInput.value = country;
+      handleSearch();
+    });
+  });
+}
+
+/**
  * Main search handler
- * Validates input and fetches country data
  */
 async function handleSearch() {
   const countryName = countryInput.value.trim();
 
   // Validate input
   if (!countryName) {
-    showError("Please enter a country name");
+    displayError("Please enter a country name");
     return;
   }
 
-  // Show loading state
-  showLoading();
+  // Show loading indicator
+  toggleLoading(true);
 
   try {
-    // Fetch country data from API
+    // Fetch country data
     const countryData = await fetchCountryData(countryName);
 
     // Display the results
     displayCountryInfo(countryData);
   } catch (error) {
     console.error("Error:", error);
-    showError(error.message);
+    displayError(error.message);
+  } finally {
+    // Hide loading indicator
+    toggleLoading(false);
   }
 }
 
 /**
- * Fetch country data from REST Countries API
+ * Fetch country data from the API
  * @param {string} countryName - Name of the country to search for
- * @returns {Promise<Object>} Country data
+ * @returns {Promise<Object>} - Country data
  */
 async function fetchCountryData(countryName) {
   const url = `${API_BASE_URL}/name/${encodeURIComponent(countryName)}?fields=${API_FIELDS}`;
@@ -344,24 +328,26 @@ async function fetchCountryData(countryName) {
     if (!response.ok) {
       if (response.status === 404) {
         throw new Error(
-          "Country not found. Please check the spelling and try again.",
+          `Country "${countryName}" not found. Please check the spelling.`,
         );
       } else {
-        throw new Error(`API Error: ${response.status}`);
+        throw new Error(
+          `API error (${response.status}). Please try again later.`,
+        );
       }
     }
 
     const data = await response.json();
 
-    // Handle empty response
+    // Validate response
     if (!data || data.length === 0) {
-      throw new Error("No country data found");
+      throw new Error("No data received from the API");
     }
 
     // Return the first matching country
     return data[0];
   } catch (error) {
-    // Re-throw network errors
+    // Handle network errors
     if (error.name === "TypeError") {
       throw new Error("Network error. Please check your internet connection.");
     }
@@ -377,144 +363,167 @@ function displayCountryInfo(country) {
   // Clear previous results
   resultsSection.innerHTML = "";
 
-  // Format population with commas
+  // Format data
   const formattedPopulation = country.population?.toLocaleString() || "N/A";
-
-  // Format area with commas and add km²
   const formattedArea = country.area
     ? `${country.area.toLocaleString()} km²`
     : "N/A";
 
-  // Extract currency information
+  // Format currencies
   const currencies = country.currencies
     ? Object.values(country.currencies)
-        .map((currency) => `${currency.name} (${currency.symbol || "N/A"})`)
+        .map((c) => `${c.name} (${c.symbol || "N/A"})`)
         .join(", ")
     : "N/A";
 
-  // Extract languages
+  // Format languages
   const languages = country.languages ? Object.values(country.languages) : [];
 
-  // Create country card HTML
-  const countryCard = `
-        <div class="country-card">
-            <div class="country-header">
-                <div class="country-flag">
-                    ${
-                      country.flags?.svg
-                        ? `<img src="${country.flags.svg}" alt="${country.name.common} flag" style="max-width: 120px; max-height: 80px; object-fit: cover;">`
-                        : "🏳️"
-                    }
-                </div>
-                <div class="country-name">
-                    <h2>${country.name?.common || "N/A"}</h2>
-                    <p class="official-name">${country.name?.official || ""}</p>
-                </div>
+  // Create the country card HTML
+  const countryCard = document.createElement("div");
+  countryCard.className = "country-card";
+  countryCard.innerHTML = `
+        <div class="country-header">
+            <div class="country-flag">
+                ${
+                  country.flags?.svg
+                    ? `<img src="${country.flags.svg}" alt="${country.name.common} flag" class="flag-img">`
+                    : "🏳️"
+                }
             </div>
-            
-            <div class="country-details">
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <span class="detail-label">Capital</span>
-                        <span class="detail-value">${country.capital?.[0] || "N/A"}</span>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <span class="detail-label">Region</span>
-                        <span class="detail-value">${country.region || "N/A"}${country.subregion ? `, ${country.subregion}` : ""}</span>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <span class="detail-label">Population</span>
-                        <span class="detail-value">${formattedPopulation}</span>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <span class="detail-label">Area</span>
-                        <span class="detail-value">${formattedArea}</span>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <span class="detail-label">Currencies</span>
-                        <span class="detail-value">${currencies}</span>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <span class="detail-label">Languages</span>
-                        <div class="languages">
-                            ${languages.map((lang) => `<span class="language-tag">${lang}</span>`).join("") || "N/A"}
-                        </div>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <span class="detail-label">Time Zones</span>
-                        <span class="detail-value">${country.timezones?.length || 0}</span>
+            <div class="country-name">
+                <h2>${country.name?.common || "N/A"}</h2>
+                <p class="official-name">${country.name?.official || ""}</p>
+            </div>
+        </div>
+        
+        <div class="country-details">
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Capital City</span>
+                    <span class="detail-value">${country.capital?.[0] || "N/A"}</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Region</span>
+                    <span class="detail-value">${country.region || "N/A"}${country.subregion ? `, ${country.subregion}` : ""}</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Population</span>
+                    <span class="detail-value">${formattedPopulation}</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Area</span>
+                    <span class="detail-value">${formattedArea}</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Currencies</span>
+                    <span class="detail-value">${currencies}</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Languages</span>
+                    <div class="languages-container">
+                        ${
+                          languages.length > 0
+                            ? languages
+                                .map(
+                                  (lang) =>
+                                    `<span class="language-badge">${lang}</span>`,
+                                )
+                                .join("")
+                            : "N/A"
+                        }
                     </div>
                 </div>
                 
-                ${
-                  country.borders?.length
-                    ? `
-                    <div class="borders-section">
-                        <h3>Bordering Countries</h3>
-                        <div class="border-tags">
-                            ${country.borders
-                              .map(
-                                (border) =>
-                                  `<span class="border-tag" data-country="${border}">${border}</span>`,
-                              )
-                              .join("")}
-                        </div>
-                    </div>
-                `
-                    : ""
-                }
+                <div class="detail-item">
+                    <span class="detail-label">Time Zones</span>
+                    <span class="detail-value">${country.timezones?.length || 0} time zone(s)</span>
+                </div>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Country Code</span>
+                    <span class="detail-value">${country.cca2 || "N/A"}</span>
+                </div>
             </div>
+            
+            ${
+              country.borders?.length
+                ? `
+                <div class="borders-section">
+                    <h3>Bordering Countries</h3>
+                    <div class="border-tags">
+                        ${country.borders
+                          .map(
+                            (border) =>
+                              `<button class="border-tag" data-country-code="${border}">${border}</button>`,
+                          )
+                          .join("")}
+                    </div>
+                </div>
+            `
+                : ""
+            }
         </div>
     `;
 
-  // Insert the card
-  resultsSection.innerHTML = countryCard;
+  // Add to results section
+  resultsSection.appendChild(countryCard);
 
   // Add click handlers for border countries
   document.querySelectorAll(".border-tag").forEach((tag) => {
     tag.addEventListener("click", async () => {
-      countryInput.value = tag.textContent;
+      const countryCode = tag.getAttribute("data-country-code");
+      countryInput.value = countryCode;
       await handleSearch();
     });
   });
 }
 
 /**
- * Display loading indicator
- */
-function showLoading() {
-  const loading = loadingTemplate.content.cloneNode(true);
-  resultsSection.innerHTML = "";
-  resultsSection.appendChild(loading);
-}
-
-/**
  * Display error message
  * @param {string} message - Error message to display
  */
-function showError(message) {
+function displayError(message) {
   resultsSection.innerHTML = `
         <div class="error-message">
-            <i>⚠️</i>
+            <span class="error-icon">⚠️</span>
             <p>${message}</p>
+            <p class="error-suggestion">Try searching for "Japan", "France", or "Brazil"</p>
         </div>
     `;
 }
 
 /**
- * Initialize the app with a default country
+ * Toggle loading indicator
+ * @param {boolean} show - Whether to show or hide loading
  */
-function initializeApp() {
-  // Load a default country on first visit
+function toggleLoading(show) {
+  if (show) {
+    loadingIndicator.classList.remove("hidden");
+    resultsSection.innerHTML = ""; // Clear previous results
+  } else {
+    loadingIndicator.classList.add("hidden");
+  }
+}
+
+/**
+ * Load a default country on first visit (optional)
+ */
+function loadDefaultCountry() {
   countryInput.value = "Japan";
   handleSearch();
 }
 
-// Initialize the app when the page loads
-document.addEventListener("DOMContentLoaded", initializeApp);
+// Export functions for testing (if needed)
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    fetchCountryData,
+    displayCountryInfo,
+    displayError,
+  };
+}
