@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Manage Users</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>Manage Users</h1>
+
+    <table border="1">
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Action</th>
+      </tr>
+
+      <tr>
+        <td>1</td>
+        <td>Ana</td>
+        <td>ana@email.com</td>
+        <td><button onclick="deleteUser(this)">Delete</button></td>
+      </tr>
+
+      <tr>
+        <td>2</td>
+        <td>Juan</td>
+        <td>juan@email.com</td>
+        <td><button onclick="deleteUser(this)">Delete</button></td>
+      </tr>
+    </table>
+
+    <h2>Add User</h2>
+
+    <form onsubmit="addUser(event)">
+      <input type="text" id="name" placeholder="Name" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="text" id="role" placeholder="Role" required />
+      <button type="submit">Add User</button>
+    </form>
+
+    <br />
+    <a href="admin.html">Back to Dashboard</a>
+
+    <script src="script.js"></script>
+  </body>
+</html>

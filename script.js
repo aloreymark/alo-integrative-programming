@@ -232,3 +232,289 @@ if (settingsForm) {
     }
   }
 })();
+
+// Example role check
+let userRole = "admin";
+
+if (userRole === "admin") {
+  console.log("Admin access granted");
+}
+
+// Delete user from table
+function deleteUser(button) {
+  let row = button.parentElement.parentElement;
+  row.remove();
+}
+
+// Add new user to table
+function addUser(event) {
+  event.preventDefault();
+
+  let name = document.getElementById("name").value;
+  let email = document.getElementById("email").value;
+
+  let table = document.querySelector("table");
+
+  let newRow = table.insertRow();
+
+  newRow.insertCell(0).innerText = table.rows.length - 1;
+  newRow.insertCell(1).innerText = name;
+  newRow.insertCell(2).innerText = email;
+
+  let actionCell = newRow.insertCell(3);
+  actionCell.innerHTML = '<button onclick="deleteUser(this)">Delete</button>';
+
+  document.querySelector("form").reset();
+}
+
+/**
+ * Country Explorer App
+ * Fetches and displays country information using REST Countries API
+ */
+
+// API Configuration
+const API_BASE_URL = "https://restcountries.com/v3.1";
+const API_FIELDS =
+  "name,capital,region,subregion,population,area,currencies,languages,flags,timezones,borders,cca2";
+
+// DOM Elements
+const countryInput = document.getElementById("countryInput");
+const searchBtn = document.getElementById("searchBtn");
+const resultsSection = document.getElementById("resultsSection");
+const loadingTemplate = document.getElementById("loadingTemplate");
+
+// Example buttons
+const exampleBtns = document.querySelectorAll(".example-btn");
+
+// Event Listeners
+searchBtn.addEventListener("click", handleSearch);
+countryInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") handleSearch();
+});
+
+// Add click listeners to example buttons
+exampleBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const country = btn.getAttribute("data-country");
+    countryInput.value = country;
+    handleSearch();
+  });
+});
+
+/**
+ * Main search handler
+ * Validates input and fetches country data
+ */
+async function handleSearch() {
+  const countryName = countryInput.value.trim();
+
+  // Validate input
+  if (!countryName) {
+    showError("Please enter a country name");
+    return;
+  }
+
+  // Show loading state
+  showLoading();
+
+  try {
+    // Fetch country data from API
+    const countryData = await fetchCountryData(countryName);
+
+    // Display the results
+    displayCountryInfo(countryData);
+  } catch (error) {
+    console.error("Error:", error);
+    showError(error.message);
+  }
+}
+
+/**
+ * Fetch country data from REST Countries API
+ * @param {string} countryName - Name of the country to search for
+ * @returns {Promise<Object>} Country data
+ */
+async function fetchCountryData(countryName) {
+  const url = `${API_BASE_URL}/name/${encodeURIComponent(countryName)}?fields=${API_FIELDS}`;
+
+  try {
+    const response = await fetch(url);
+
+    // Handle HTTP errors
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(
+          "Country not found. Please check the spelling and try again.",
+        );
+      } else {
+        throw new Error(`API Error: ${response.status}`);
+      }
+    }
+
+    const data = await response.json();
+
+    // Handle empty response
+    if (!data || data.length === 0) {
+      throw new Error("No country data found");
+    }
+
+    // Return the first matching country
+    return data[0];
+  } catch (error) {
+    // Re-throw network errors
+    if (error.name === "TypeError") {
+      throw new Error("Network error. Please check your internet connection.");
+    }
+    throw error;
+  }
+}
+
+/**
+ * Display country information in the UI
+ * @param {Object} country - Country data object
+ */
+function displayCountryInfo(country) {
+  // Clear previous results
+  resultsSection.innerHTML = "";
+
+  // Format population with commas
+  const formattedPopulation = country.population?.toLocaleString() || "N/A";
+
+  // Format area with commas and add km²
+  const formattedArea = country.area
+    ? `${country.area.toLocaleString()} km²`
+    : "N/A";
+
+  // Extract currency information
+  const currencies = country.currencies
+    ? Object.values(country.currencies)
+        .map((currency) => `${currency.name} (${currency.symbol || "N/A"})`)
+        .join(", ")
+    : "N/A";
+
+  // Extract languages
+  const languages = country.languages ? Object.values(country.languages) : [];
+
+  // Create country card HTML
+  const countryCard = `
+        <div class="country-card">
+            <div class="country-header">
+                <div class="country-flag">
+                    ${
+                      country.flags?.svg
+                        ? `<img src="${country.flags.svg}" alt="${country.name.common} flag" style="max-width: 120px; max-height: 80px; object-fit: cover;">`
+                        : "🏳️"
+                    }
+                </div>
+                <div class="country-name">
+                    <h2>${country.name?.common || "N/A"}</h2>
+                    <p class="official-name">${country.name?.official || ""}</p>
+                </div>
+            </div>
+            
+            <div class="country-details">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Capital</span>
+                        <span class="detail-value">${country.capital?.[0] || "N/A"}</span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">Region</span>
+                        <span class="detail-value">${country.region || "N/A"}${country.subregion ? `, ${country.subregion}` : ""}</span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">Population</span>
+                        <span class="detail-value">${formattedPopulation}</span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">Area</span>
+                        <span class="detail-value">${formattedArea}</span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">Currencies</span>
+                        <span class="detail-value">${currencies}</span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">Languages</span>
+                        <div class="languages">
+                            ${languages.map((lang) => `<span class="language-tag">${lang}</span>`).join("") || "N/A"}
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">Time Zones</span>
+                        <span class="detail-value">${country.timezones?.length || 0}</span>
+                    </div>
+                </div>
+                
+                ${
+                  country.borders?.length
+                    ? `
+                    <div class="borders-section">
+                        <h3>Bordering Countries</h3>
+                        <div class="border-tags">
+                            ${country.borders
+                              .map(
+                                (border) =>
+                                  `<span class="border-tag" data-country="${border}">${border}</span>`,
+                              )
+                              .join("")}
+                        </div>
+                    </div>
+                `
+                    : ""
+                }
+            </div>
+        </div>
+    `;
+
+  // Insert the card
+  resultsSection.innerHTML = countryCard;
+
+  // Add click handlers for border countries
+  document.querySelectorAll(".border-tag").forEach((tag) => {
+    tag.addEventListener("click", async () => {
+      countryInput.value = tag.textContent;
+      await handleSearch();
+    });
+  });
+}
+
+/**
+ * Display loading indicator
+ */
+function showLoading() {
+  const loading = loadingTemplate.content.cloneNode(true);
+  resultsSection.innerHTML = "";
+  resultsSection.appendChild(loading);
+}
+
+/**
+ * Display error message
+ * @param {string} message - Error message to display
+ */
+function showError(message) {
+  resultsSection.innerHTML = `
+        <div class="error-message">
+            <i>⚠️</i>
+            <p>${message}</p>
+        </div>
+    `;
+}
+
+/**
+ * Initialize the app with a default country
+ */
+function initializeApp() {
+  // Load a default country on first visit
+  countryInput.value = "Japan";
+  handleSearch();
+}
+
+// Initialize the app when the page loads
+document.addEventListener("DOMContentLoaded", initializeApp);
